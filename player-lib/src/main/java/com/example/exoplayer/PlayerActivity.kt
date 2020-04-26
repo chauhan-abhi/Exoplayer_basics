@@ -21,6 +21,7 @@ import android.os.Bundle
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
 import com.google.android.exoplayer2.ui.PlayerView
@@ -42,16 +43,22 @@ class PlayerActivity : AppCompatActivity() {
         playerView = findViewById(R.id.video_view)
     }
 
-    private fun buildMediaSource(uri: Uri): MediaSource {
+    private fun buildMediaSource(mp4Uri: Uri, mp3Uri: Uri) : MediaSource {
         val ds: DataSource.Factory = DefaultDataSourceFactory(this, "exoplayer-codelab")
-        return ProgressiveMediaSource.Factory(ds).createMediaSource(uri)
+        val mediaSourceFactory = ProgressiveMediaSource.Factory(ds)
+        val vedioMediaSource =  mediaSourceFactory.createMediaSource(mp4Uri)
+        val audioMediaSource = mediaSourceFactory.createMediaSource(mp3Uri)
+        return ConcatenatingMediaSource(vedioMediaSource, audioMediaSource)
+
     }
 
     private fun initializePlayer() {
         mPlayer = SimpleExoPlayer.Builder(this).build()
         playerView.player = mPlayer
-        val uri = Uri.parse(getString(R.string.media_url_mp4))
-        val mediaSource = buildMediaSource(uri)
+        val mp4Uri = Uri.parse(getString(R.string.media_url_mp4))
+        val mp3Uri = Uri.parse(getString(R.string.media_url_mp3))
+
+        val mediaSource = buildMediaSource(mp4Uri, mp3Uri)
         mPlayer?.playWhenReady = playWhenReady
         mPlayer?.seekTo(currentWindow, playBackPosition)
         mPlayer?.prepare(mediaSource, false, false)
