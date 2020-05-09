@@ -3,8 +3,11 @@ package com.example.exoplayer
 import android.annotation.SuppressLint
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.exoplayer2.ExoPlayer
+import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.MediaSource
@@ -18,6 +21,10 @@ import com.google.android.exoplayer2.util.Util
 
 class PlayerActivity : AppCompatActivity() {
     lateinit var playerView:PlayerView
+    lateinit var playbackStateListener: PlaybackStatsListener
+    companion object {
+        final val TAG: String = PlayerActivity.javaClass.name
+    }
     var mPlayer: SimpleExoPlayer? = null
     var playWhenReady = true
     var currentWindow: Int = 0
@@ -26,7 +33,7 @@ class PlayerActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_player)
-
+        //playbackStatsListener = PlaybackStatsListener()
         playerView = findViewById(R.id.video_view)
     }
 
@@ -56,6 +63,7 @@ class PlayerActivity : AppCompatActivity() {
 
         }
 
+
         //mPlayer = SimpleExoPlayer.Builder(this).build()
         //val mp4Uri = Uri.parse(getString(R.string.media_url_mp4))
         //val mp3Uri = Uri.parse(getString(R.string.media_url_mp3))
@@ -68,6 +76,7 @@ class PlayerActivity : AppCompatActivity() {
         mPlayer?.playWhenReady = playWhenReady
         mPlayer?.seekTo(currentWindow, playBackPosition)
         //mPlayer?.prepare(mediaSource, false, false)
+        mPlayer?.addListener(PlaybackStatsListener())
         mPlayer?.prepare(dashMediaSource, false, false)
     }
 
@@ -102,6 +111,7 @@ class PlayerActivity : AppCompatActivity() {
             playWhenReady = mPlayer!!.playWhenReady
             playBackPosition = mPlayer!!.currentPosition
             currentWindow = mPlayer!!.currentWindowIndex
+            mPlayer!!.removeListener(playbackStateListener)
             mPlayer!!.release()
             mPlayer = null
         }
@@ -115,5 +125,20 @@ class PlayerActivity : AppCompatActivity() {
                 or View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY
                 or View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION
                 or View.SYSTEM_UI_FLAG_HIDE_NAVIGATION)
+    }
+
+    inner class PlaybackStatsListener() : Player.EventListener {
+        override fun onPlayerStateChanged(playWhenReady: Boolean, playbackState: Int) {
+            var message = ""
+            when(playbackState) {
+                ExoPlayer.STATE_IDLE -> message = "ExoPlayer.STATE_IDLE              -"
+                ExoPlayer.STATE_BUFFERING -> message = "ExoPlayer.STATE_BUFFERING    -"
+                ExoPlayer.STATE_READY ->  message = "ExoPlayer.STATE_READY           -"
+                ExoPlayer.STATE_ENDED -> message = "ExoPlayer.STATE_ENDED            -"
+                else -> message = "UNKNOWN_STATE"
+
+            }
+            Log.d(TAG, "changed state to ${message} playWhenReady: ${playWhenReady}")
+        }
     }
 }
