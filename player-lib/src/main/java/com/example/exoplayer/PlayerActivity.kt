@@ -1,18 +1,3 @@
-/*
- * Copyright (C) 2017 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
-* limitations under the License.
- */
 package com.example.exoplayer
 
 import android.annotation.SuppressLint
@@ -24,6 +9,8 @@ import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.source.ConcatenatingMediaSource
 import com.google.android.exoplayer2.source.MediaSource
 import com.google.android.exoplayer2.source.ProgressiveMediaSource
+import com.google.android.exoplayer2.source.dash.DashMediaSource
+import com.google.android.exoplayer2.trackselection.DefaultTrackSelector
 import com.google.android.exoplayer2.ui.PlayerView
 import com.google.android.exoplayer2.upstream.DataSource
 import com.google.android.exoplayer2.upstream.DefaultDataSourceFactory
@@ -43,7 +30,7 @@ class PlayerActivity : AppCompatActivity() {
         playerView = findViewById(R.id.video_view)
     }
 
-    private fun buildMediaSource(mp4Uri: Uri, mp3Uri: Uri) : MediaSource {
+    private fun buildMediaSourceForConcatenatingMedia(mp4Uri: Uri, mp3Uri: Uri) : MediaSource {
         val ds: DataSource.Factory = DefaultDataSourceFactory(this, "exoplayer-codelab")
         val mediaSourceFactory = ProgressiveMediaSource.Factory(ds)
         val videoMediaSource =  mediaSourceFactory.createMediaSource(mp4Uri)
@@ -52,16 +39,36 @@ class PlayerActivity : AppCompatActivity() {
 
     }
 
-    private fun initializePlayer() {
-        mPlayer = SimpleExoPlayer.Builder(this).build()
-        playerView.player = mPlayer
-        val mp4Uri = Uri.parse(getString(R.string.media_url_mp4))
-        val mp3Uri = Uri.parse(getString(R.string.media_url_mp3))
+    private fun buildDashMediaSource(uri: Uri): MediaSource {
+        val ds: DataSource.Factory = DefaultDataSourceFactory(this, "exoplayer-codelab")
+        val dashMediaSourceFactory = DashMediaSource.Factory(ds)
+        return dashMediaSourceFactory.createMediaSource(uri)
+    }
 
-        val mediaSource = buildMediaSource(mp4Uri, mp3Uri)
+    private fun initializePlayer() {
+        if (mPlayer == null) {
+            val trackSelector = DefaultTrackSelector(this)
+            trackSelector.setParameters(
+                    trackSelector.buildUponParameters().setMaxVideoSizeSd())
+            mPlayer = SimpleExoPlayer.Builder(this)
+                    .setTrackSelector(trackSelector)
+                    .build()
+
+        }
+
+        //mPlayer = SimpleExoPlayer.Builder(this).build()
+        //val mp4Uri = Uri.parse(getString(R.string.media_url_mp4))
+        //val mp3Uri = Uri.parse(getString(R.string.media_url_mp3))
+        val dashUri = Uri.parse(getString(R.string.media_url_dash))
+        playerView.player = mPlayer
+
+        //val mediaSource = buildMediaSourceForConcatenatingMedia(mp4Uri, mp3Uri)
+        val dashMediaSource = buildDashMediaSource(dashUri)
+
         mPlayer?.playWhenReady = playWhenReady
         mPlayer?.seekTo(currentWindow, playBackPosition)
-        mPlayer?.prepare(mediaSource, false, false)
+        //mPlayer?.prepare(mediaSource, false, false)
+        mPlayer?.prepare(dashMediaSource, false, false)
     }
 
     override fun onStart() {
